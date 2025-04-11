@@ -10,6 +10,8 @@ async function bootstrap() {
 
   console.log('🚀 Initializing Student Management API...');
 
+  app.setGlobalPrefix('api'); // Ensures all routes are prefixed with /api
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
@@ -21,7 +23,11 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      url: '/api-json',
+    },
+  });
 
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT);
