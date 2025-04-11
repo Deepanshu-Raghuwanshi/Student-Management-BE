@@ -9,7 +9,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "build": "nest build",
     "start": "node dist/main.js",
-    "vercel-build": "yarn build",
+    "vercel-build": "yarn build && cp dist/main.js dist/index.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
