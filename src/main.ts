@@ -8,10 +8,10 @@ import { TransformInterceptor } from './common/interceptor/transform-interceptor
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  console.log('🚀 Initializing Student Management API...');
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-
   app.useGlobalFilters(new GlobalExceptionFilter());
-
   app.useGlobalInterceptors(new TransformInterceptor());
 
   const config = new DocumentBuilder()
@@ -22,8 +22,9 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT);
-  console.log(`Swagger Running on http://localhost:${PORT}/api`);
+  console.log(`✅ Server is running on: http://localhost:${PORT}/api`);
 }
 bootstrap();
