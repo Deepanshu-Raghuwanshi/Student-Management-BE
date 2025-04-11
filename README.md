@@ -13,6 +13,8 @@ cd Student-Management-BE
 
 Install Dependencies: yarn install
 
+Build the Application: yarn build
+
 Create Environment Variables File:
 Copy the .env.example to .env:
 cp .env.example .env
