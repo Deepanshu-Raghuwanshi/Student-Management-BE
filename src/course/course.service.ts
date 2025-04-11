@@ -1,6 +1,7 @@
 import {
+  HttpException,
+  HttpStatus,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -19,11 +20,26 @@ export class CourseService {
 
   async create(createCourseDto: CreateCourseDto): Promise<Course> {
     try {
+      const existingCourse = await this.courseModel
+        .findOne({
+          $or: [{ name: createCourseDto.name }],
+        })
+        .exec();
+
+      if (existingCourse) {
+        throw new HttpException(
+          `Course with the same name or code already exists`,
+          HttpStatus.CONFLICT,
+        );
+      }
+
       const course = new this.courseModel(createCourseDto);
       return await course.save();
     } catch (error) {
-      console.error('Error creating course:', error);
-      throw new InternalServerErrorException('Failed to create course');
+      throw new HttpException(
+        `Failed to create course: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -31,8 +47,10 @@ export class CourseService {
     try {
       return await this.courseModel.find().exec();
     } catch (error) {
-      console.error('Error finding courses:', error);
-      throw new InternalServerErrorException('Failed to fetch courses');
+      throw new HttpException(
+        `Failed to fetch courses: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -47,8 +65,10 @@ export class CourseService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      console.error('Error finding course:', error);
-      throw new InternalServerErrorException('Failed to fetch course');
+      throw new HttpException(
+        `Failed to fetch course: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -67,8 +87,10 @@ export class CourseService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      console.error('Error updating course:', error);
-      throw new InternalServerErrorException('Failed to update course');
+      throw new HttpException(
+        `Failed to update course: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -80,7 +102,6 @@ export class CourseService {
         throw new NotFoundException(`Course with ID ${id} not found`);
       }
 
-      // Remove course reference from all students
       await this.studentModel.updateMany(
         { courses: new Types.ObjectId(id) },
         { $pull: { courses: new Types.ObjectId(id) } },
@@ -89,18 +110,21 @@ export class CourseService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      console.error('Error removing course:', error);
-      throw new InternalServerErrorException('Failed to remove course');
+      throw new HttpException(
+        `Failed to remove course: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   async findByTopic(topic: string): Promise<Course[]> {
     try {
-      return await this.courseModel.find({ topics: { $in: [topic] } }).exec();
+      const regex = new RegExp(topic, 'i');
+      return await this.courseModel.find({ topics: { $regex: regex } }).exec();
     } catch (error) {
-      console.error('Error finding courses by topic:', error);
-      throw new InternalServerErrorException(
-        'Failed to fetch courses by topic',
+      throw new HttpException(
+        `Failed to fetch courses by topic: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -110,25 +134,21 @@ export class CourseService {
     studentId: string,
   ): Promise<Course> {
     try {
-      // Check if course exists
       const course = await this.courseModel.findById(courseId);
       if (!course) {
         throw new NotFoundException(`Course with ID ${courseId} not found`);
       }
 
-      // Check if student exists
       const student = await this.studentModel.findById(studentId);
       if (!student) {
         throw new NotFoundException(`Student with ID ${studentId} not found`);
       }
 
-      // Add student to course if not already added
       if (!course.students.includes(new Types.ObjectId(studentId))) {
         course.students.push(new Types.ObjectId(studentId));
         await course.save();
       }
 
-      // Add course to student if not already added
       if (!student.courses.includes(new Types.ObjectId(courseId))) {
         student.courses.push(new Types.ObjectId(courseId));
         await student.save();
@@ -139,9 +159,9 @@ export class CourseService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      console.error('Error assigning student to course:', error);
-      throw new InternalServerErrorException(
-        'Failed to assign student to course',
+      throw new HttpException(
+        `Failed to assign student to course: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -151,19 +171,17 @@ export class CourseService {
     studentId: string,
   ): Promise<void> {
     try {
-      // Remove course from student
       await this.studentModel.findByIdAndUpdate(studentId, {
         $pull: { courses: new Types.ObjectId(courseId) },
       });
 
-      // Remove student from course
       await this.courseModel.findByIdAndUpdate(courseId, {
         $pull: { students: new Types.ObjectId(studentId) },
       });
     } catch (error) {
-      console.error('Error removing student from course:', error);
-      throw new InternalServerErrorException(
-        'Failed to remove student from course',
+      throw new HttpException(
+        `Failed to remove student from course: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -183,9 +201,9 @@ export class CourseService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      console.error('Error getting students by course:', error);
-      throw new InternalServerErrorException(
-        'Failed to get students by course',
+      throw new HttpException(
+        `Failed to get students by course: ${error?.message || 'Internal server error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
